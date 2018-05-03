@@ -3,12 +3,12 @@
 
 import argparse
 import subprocess
-from base64 import b64decode
 
 import dns.resolver
 import dns.rdatatype
 
 from . import Nagios_out
+from . import RSAPubkey
 
 DKIM_DNS_TAGS = {
     'v' : 'version',
@@ -53,28 +53,7 @@ def get_domainkey_from_dns(domain, selector):
                 domain=domain,
             ))
     domainkey_string = answer[0].to_text().strip('\'"')
-
     return parse_domainkey(domainkey_string)
-
-def get_pubkey(private_key_file):
-    with open(private_key_file, 'rb') as f:
-        priv_key = f.read()
-    pubkey = subprocess.check_output(
-        ['openssl', 'rsa', '-pubout', '-outform', 'der'],
-        input=priv_key,
-        stderr=subprocess.DEVNULL
-        )
-    return pubkey
-
-def compare_pubkeys(dns_domainkey_data, keyfile):
-    if dns_domainkey_data['key_type'].lower() != 'rsa':
-        raise TypeError(
-            'Currently only RSA keys are suported, but domainkey has key type {key_type}'.format(
-                key_type=dns_domainkey_data['key_type'],
-                ))
-    pubkey_from_keyfile = get_pubkey(keyfile)
-    pubkey_from_dns = b64decode(dns_domainkey_data['public_key'])
-    return pubkey_from_keyfile == pubkey_from_dns
 
 
 def main():
@@ -103,8 +82,17 @@ def main():
             nagios.write('critical', str(err))
 
         if args.keyfile is not None:
+            if domainkey_data['key_type'].lower() != 'rsa':
+                raise TypeError(
+                    'Currently only RSA keys are suported, but domainkey has key type {key_type}'.format(
+                        key_type=dns_domainkey_data['key_type'],
+                        ))
             try:
-                if compare_pubkeys(domainkey_data, args.keyfile):
+                with open(args.keyfile, 'rb') as keyfile:
+                    private_key = keyfile.read()
+                keyfile_public_key = RSAPubkey.extract_pubkey(private_key)
+                dns_public_key = RSAPubkey(domainkey_data['public_key'])
+                if dns_public_key == keyfile_public_key:
                     nagios.write('ok', 'DKIM is there and private key match public key')
                 else:
                     nagios.write('critical', 'DKIM public key doesn\'t match private key')

@@ -3,5 +3,6 @@
 
 from .Severity import Severity
 from .Nagios_out import Nagios_out
+from .RSAPubkey import RSAPubkey
 
 __version__ = '0.1.0'
