@@ -33,6 +33,14 @@ class DKIMException(Exception):
 
 
 def parse_domainkey(s):
+    """ parse the raw DNS domainkey and return a dict
+
+    Args:
+        s (str): the raw domainkey string
+
+    Returns:
+        dict: the parsed data
+    """
     domainkey_fields = [field.split('=', 1) for field in s.split('; ')]
     domainkey_data = { DKIM_DNS_TAGS[field[0]]: field[1] for field in domainkey_fields}
     if 'public_key' not in domainkey_data:
@@ -40,6 +48,15 @@ def parse_domainkey(s):
     return dict(domainkey_data, **DKIM_DNS_TAGS_DEFAULTS)
 
 def get_domainkey_from_dns(domain, selector):
+    """ query the domainkey via DNS and return the data
+
+    Args:
+        domain (str): the domain of the key
+        selector (str): the selector used for DKIM
+
+    Returns:
+        dict: data of the domainkey
+    """
     answer = dns.resolver.query(
         '{selector:s}._domainkey.{domain:s}'.format(
             selector=selector,
@@ -57,6 +74,7 @@ def get_domainkey_from_dns(domain, selector):
 
 
 def main():
+    """ Main entry point of the check_dkim commandline tool """
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', '--domain', action='store', required=True,
                         help='the domain to check')
