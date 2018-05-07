@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from base64 import b64decode, b64encode
-import subprocess
+from Crypto.PublicKey import RSA
 
 class RSAPubkey(object):
     """ represents a RSA public key
@@ -44,11 +44,12 @@ class RSAPubkey(object):
 
         Returns:
             Pubkey: public key
-        """
-        pubkey = subprocess.check_output(
-            ['openssl', 'rsa', '-pubout', '-outform', 'der'],
-            input=private_key,
-            stderr=subprocess.DEVNULL
-            )
-        return cls(pubkey)
 
+        Raises:
+            ValueError: When private_key isn't a private key
+        """
+        private_key = RSA.importKey(private_key)
+        if not private_key.has_private():
+            raise ValueError('Key is not a private key!')
+        public_key = private_key.publickey()
+        return cls(public_key.exportKey(format='DER'))

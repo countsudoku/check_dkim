@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import argparse
-import subprocess
 
 import dns.resolver
 import dns.rdatatype
@@ -116,9 +115,6 @@ def main():
                     nagios.write('critical', 'DKIM public key doesn\'t match private key')
             except FileNotFoundError:
                 nagios.write('critical', 'File {file} not readable'.format(file=args.keyfile))
-            except subprocess.CalledProcessError as err:
-                nagios.write(
-                    'critical', 'File {file} isn\'t a private key file'.format(file=args.keyfile))
         else:
             nagios.write('ok', 'DKIM key is there')
 
