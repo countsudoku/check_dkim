@@ -9,68 +9,7 @@ import dns.rdatatype
 
 from . import Nagios_output
 from . import RSAPubkey
-
-DKIM_DNS_TAGS = {
-    'v' : 'version',
-    'g' : 'granularity',
-    'h' : 'acceptable_hash_algorithm',
-    'k' : 'key_type',
-    'n' : 'notes',
-    'p' : 'public_key',
-    's' : 'service_type',
-    't' : 'flags',
-    }
-
-DKIM_DNS_TAGS_DEFAULTS = {
-    'version' : 'DKIM1',
-    'granularity': '*',
-    'key_type': 'rsa',
-    'service_type' : '*',
-    }
-
-class DKIMException(Exception):
-    pass
-
-
-def parse_domainkey(s):
-    """ parse the raw DNS domainkey and return a dict
-
-    Args:
-        s (str): the raw domainkey string
-
-    Returns:
-        dict: the parsed data
-    """
-    domainkey_fields = [field.split('=', 1) for field in s.split('; ')]
-    domainkey_data = { DKIM_DNS_TAGS[field[0]]: field[1] for field in domainkey_fields}
-    if 'public_key' not in domainkey_data:
-        raise DKIMException('no public key found in domainkey data')
-    return dict(domainkey_data, **DKIM_DNS_TAGS_DEFAULTS)
-
-def get_domainkey_from_dns(domain, selector):
-    """ query the domainkey via DNS and return the data
-
-    Args:
-        domain (str): the domain of the key
-        selector (str): the selector used for DKIM
-
-    Returns:
-        dict: data of the domainkey
-    """
-    answer = dns.resolver.query(
-        '{selector:s}._domainkey.{domain:s}'.format(
-            selector=selector,
-            domain=domain,
-            ),
-        dns.rdatatype.TXT)
-    if len(answer) != 1:
-        raise DKIMException(
-            'more then one DKIM key found for selector {selector} and domain {domain}'.format(
-                selector=selector,
-                domain=domain,
-            ))
-    domainkey_string = answer[0].to_text().strip('\'"')
-    return parse_domainkey(domainkey_string)
+from . import Domainkey, DKIMException
 
 
 def main():
@@ -88,7 +27,7 @@ def main():
         nagios = Nagios_output('DKIM')
 
         try:
-            domainkey_data = get_domainkey_from_dns(domain=args.domain, selector=args.selector)
+            domainkey = Domainkey.get_domainkey_from_dns(domain=args.domain, selector=args.selector)
         except dns.resolver.NXDOMAIN:
             return nagios.write(
                 'critical',
@@ -100,16 +39,11 @@ def main():
             return nagios.write('critical', str(err))
 
         if args.keyfile is not None:
-            if domainkey_data['key_type'].lower() != 'rsa':
-                raise TypeError(
-                    'Currently only RSA keys are suported, but domainkey has key type {key_type}'.format(
-                        key_type=dns_domainkey_data['key_type'],
-                        ))
             try:
                 with open(args.keyfile, 'rb') as keyfile:
                     private_key = keyfile.read()
                 keyfile_public_key = RSAPubkey.extract_pubkey(private_key)
-                dns_public_key = RSAPubkey(domainkey_data['public_key'])
+                dns_public_key = domainkey.key
                 if dns_public_key == keyfile_public_key:
                     return nagios.write('ok', 'DKIM is there and private key match public key')
                 else:
