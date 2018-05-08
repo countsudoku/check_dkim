@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import argparse
+import sys
 
 import dns.resolver
 import dns.rdatatype
@@ -89,14 +90,14 @@ def main():
         try:
             domainkey_data = get_domainkey_from_dns(domain=args.domain, selector=args.selector)
         except dns.resolver.NXDOMAIN:
-            nagios.write(
+            return nagios.write(
                 'critical',
                 'can\'t find domainkey for selector {selector} and domain {domain}'.format(
                     selector=args.selector,
                     domain=args.domain,
                     ))
         except DKIMException as err:
-            nagios.write('critical', str(err))
+            return nagios.write('critical', str(err))
 
         if args.keyfile is not None:
             if domainkey_data['key_type'].lower() != 'rsa':
@@ -110,21 +111,21 @@ def main():
                 keyfile_public_key = RSAPubkey.extract_pubkey(private_key)
                 dns_public_key = RSAPubkey(domainkey_data['public_key'])
                 if dns_public_key == keyfile_public_key:
-                    nagios.write('ok', 'DKIM is there and private key match public key')
+                    return nagios.write('ok', 'DKIM is there and private key match public key')
                 else:
-                    nagios.write('critical', 'DKIM public key doesn\'t match private key')
+                    return nagios.write('critical', 'DKIM public key doesn\'t match private key')
             except FileNotFoundError:
-                nagios.write('critical', 'File {file} not readable'.format(file=args.keyfile))
+                return nagios.write('critical', 'File {file} not readable'.format(file=args.keyfile))
         else:
-            nagios.write('ok', 'DKIM key is there')
+            return nagios.write('ok', 'DKIM key is there')
 
     except Exception as err:
         name = err.__class__.__name__
         msg = str(err)
-        nagios.write( 'critical', '{type}: {msg}'.format(
+        return nagios.write( 'critical', '{type}: {msg}'.format(
             type=name,
             msg=msg,
             ))
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

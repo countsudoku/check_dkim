@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import sys
 from . import Severity
 
 class Nagios_output(object):
@@ -16,4 +15,4 @@ class Nagios_output(object):
             msg=msg,
             )
         print(output)
-        sys.exit(int(s))
+        return int(s)
