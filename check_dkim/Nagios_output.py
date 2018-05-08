@@ -4,7 +4,7 @@
 import sys
 from . import Severity
 
-class Nagios_out(object):
+class Nagios_output(object):
     def __init__(self, name=''):
         self.name = name
 

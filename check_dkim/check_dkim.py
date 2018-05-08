@@ -6,7 +6,7 @@ import argparse
 import dns.resolver
 import dns.rdatatype
 
-from . import Nagios_out
+from . import Nagios_output
 from . import RSAPubkey
 
 DKIM_DNS_TAGS = {
@@ -84,7 +84,7 @@ def main():
     args = parser.parse_args()
 
     try:
-        nagios = Nagios_out('DKIM')
+        nagios = Nagios_output('DKIM')
 
         try:
             domainkey_data = get_domainkey_from_dns(domain=args.domain, selector=args.selector)
