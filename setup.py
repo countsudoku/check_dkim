@@ -3,8 +3,7 @@
 
 from setuptools import setup, find_packages
 
-with open('check_dkim/version.txt', 'rb') as version_file:
-    __version__ = version_file.read().strip().decode()
+from check_dkim import __version__
 
 with open('requirements.txt', 'rb') as f:
     requirements = [ package.decode().strip('\n') for package in f.readlines() if package ]

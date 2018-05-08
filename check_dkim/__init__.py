@@ -5,5 +5,4 @@ from .Severity import Severity
 from .Nagios_out import Nagios_out
 from .RSAPubkey import RSAPubkey
 
-with open('version.txt', 'rb') as version_file:
-    __version__ = version_file.read().strip().decode()
+__version__ = '0.2.0'
