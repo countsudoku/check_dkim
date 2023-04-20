@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from base64 import b64decode, b64encode
-from Crypto.PublicKey import RSA
+from Cryptodome.PublicKey import RSA
 
 class RSAPubkey(object):
     """ represents a RSA public key
