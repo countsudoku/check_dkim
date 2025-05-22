@@ -123,5 +123,5 @@ class Domainkey(object):
                     selector=selector,
                     domain=domain,
                 ))
-        domainkey_string = answer[0].to_text().strip('\'"')
+        domainkey_string = answer[0].to_text().replace('" "', '').strip('\'"')
         return cls.parse_domainkey(domainkey_string)
